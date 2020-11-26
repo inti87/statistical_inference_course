@@ -1,0 +1,88 @@
+---
+title: "Statistical Inference Course Project"
+author: "Marko Intihar"
+date: "11/26/2020"
+output: pdf_document
+---
+
+```{r setoptions, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.width = 6, fig.height = 4)
+```
+
+```{r firststep, message=FALSE, echo=FALSE}
+rm(list = ls())
+graphics.off()
+
+# Load R packages
+packages <- c("dplyr", "ggplot2") # list of packages to load
+
+package.check <- lapply( # load or install & load list of packages
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+) 
+rm(packages, package.check)
+
+```
+
+# Part 1: Simulation
+
+We are investigating exponential distribution and we are comparing it with the Central Limit Theorem (CLT). Random variable $X$ follows exponential distribution $exp(\lambda)$, where parameter $lambda$ is rate parameter. The probability densitiy function (PDF) of exponentila distribution is:
+
+$$
+f(x) = 
+\begin{cases}
+\lambda \cdot e^{-\lambda \cdot x}\, ,& x\geq 0 \\
+0\, ,&x < 0
+\end{cases}
+$$
+
+From the theory we know that mean or expected value of exponential distribution is $E[X]=\lambda$ and variance is $Var[X]=\frac{1}{\lambda}$.
+
+In our simulation we will do the following:
+
+* simulate random samples from exponential distribution (where $\lambda = 0.2$)
+* each random sample will include $n=20$ random numbers
+* we will generate $B=1000$ different random samples
+
+After the simulations we would like to put CLT to the test by:
+
+1. Comparing sample mean to the theoretical mean of the distribution.
+2. Showing how variable the sample is (via variance) and comparing it to the theoretical variance of the distribution.
+3. Showing that the distribution is approximately normal.
+
+Let's simulate our samples:
+
+```{r simulation}
+set.seed(11235)
+samples <- matrix(rexp(n = 20 * 1000, rate = 1/0.2),  # generate samples - save to matrix
+                  nrow = 1000, ncol = 20)
+```
+
+Draw histogram of sample means VS theoretical mean of distribution:
+
+```{r samplemeans}
+sample.means <- apply(samples, 1, mean) %>% # calculate sample means
+  data.frame(X.bar = .)
+
+# draw histogram sample means VS theoretical distribution mean
+sample.means %>% 
+  ggplot(aes(x = X.bar)) +
+  geom_histogram(color = "black") +
+  geom_vline(xintercept = 0.2, color = "red", size = 2) +
+  xlab("Sample means (lambda estimate)") +
+  ylab("Number of samples") +
+  ggtitle("Histogram of sample means VS true population mean (red line)")
+
+```
+
+
+
+
+
+
+# Part 2: Inferential Data Analysis
