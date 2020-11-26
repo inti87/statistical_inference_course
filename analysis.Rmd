@@ -59,8 +59,11 @@ Let's simulate our samples:
 
 ```{r simulation}
 set.seed(11235)
-samples <- matrix(rexp(n = 20 * 1000, rate = 1/0.2),  # generate samples - save to matrix
-                  nrow = 1000, ncol = 20)
+lambda <- 0.2 # lambda of population distribution
+n <- 20 # sample size
+B <- 1000 # samples generated in simulation
+samples <- matrix(rexp(n = n * B, rate = lambda),  # generate samples - save to matrix
+                  nrow = B, ncol = n)
 ```
 
 Draw histogram of sample means VS theoretical mean of distribution:
@@ -73,14 +76,34 @@ sample.means <- apply(samples, 1, mean) %>% # calculate sample means
 sample.means %>% 
   ggplot(aes(x = X.bar)) +
   geom_histogram(color = "black") +
-  geom_vline(xintercept = 0.2, color = "red", size = 2) +
-  xlab("Sample means (lambda estimate)") +
+  geom_vline(xintercept = 1/lambda, color = "red", size = 1.5) +
+  geom_vline(xintercept = mean(sample.means$X.bar), color = "blue", size = 1.5) +
+  scale_x_continuous(breaks = seq(0,10)) +
+  xlab("Sample means X(bar) (~lambda estimates)") +
   ylab("Number of samples") +
   ggtitle("Histogram of sample means VS true population mean (red line)")
 
 ```
 
+Now check what is the variability of sample means, based on the theory (CLT) the variability (variance of distribution) of sample means should be close to $SE^2=\frac{\sigma^2}{n}$, where $SE$ is standard error, $\sigma^2$ is variance of population distribution (exponential distribution: $\frac{1}{\lambda}=\frac{1}{0.2}=5$). Using samples we can estimate standard error $SE^2=\frac{\s^2}{n}$, where $s^2$ is estimated variance from sample. 
 
+```{r SE}
+sample.var <- apply(samples, 1, var) %>% # calculate sample variance
+  data.frame(s2.bar = .) %>% 
+  mutate(SE2 = s2.bar / n)
+
+# draw histogram sample means VS theoretical distribution mean
+sample.var %>% 
+  ggplot(aes(x = SE2)) +
+  geom_histogram(color = "black") +
+  geom_vline(xintercept = (1/lambda^2)/n, color = "red", size = 1.5) +
+  geom_vline(xintercept = mean(sample.var$SE2), color = "blue", size = 1.5) +
+  scale_x_continuous(breaks = seq(0,10, 0.5)) +
+  xlab("Variability of sample means (SE^2)") +
+  ylab("Number of samples") +
+  ggtitle("")
+
+```
 
 
 
