@@ -2,7 +2,7 @@
 title: "Statistical Inference Course Project"
 author: "Marko Intihar"
 #date: "11/26/2020"
-geometry: "left=1cm,right=1cm,top=1cm,bottom=1cm"
+geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
 output: pdf_document
 ---
 
@@ -16,7 +16,7 @@ rm(list = ls())
 graphics.off()
 
 # Load R packages
-packages <- c("dplyr", "ggplot2") # list of packages to load
+packages <- c("dplyr", "ggplot2", "datasets", "purrr") # list of packages to load
 
 package.check <- lapply( # load or install & load list of packages
   packages,
@@ -73,12 +73,12 @@ sample.means %>%
   geom_vline(xintercept = mean(sample.means$X.bar), color = "blue", size = 1.5) +
   scale_x_continuous(breaks = seq(0,10)) +
   labs(title = "Histogram of sample means VS true population mean",
-       subtitle = "Blue line - true population mean | Red line - average of sample means",
+       subtitle = "Red line - true population mean | Blue line - average of sample means",
        x = "Sample means X(bar) (~lambda estimates)", 
        y = "Number of samples") 
 ```
 :::
-From the figure above we can see that estimated mean of all sample means (blue line), which has value of `r round(mean(sample.means$X.bar),2)` is very close to the true mean of the distribution, which has value `r 1/lambda`. This indicates that CLT applies to given distribution, and mean value for distribution of sample means is equal to mean of true population distribution (from which samples were generated). 
+From the figure above we can see that estimated mean of all sample means (blue line), which has value of `r round(mean(sample.means$X.bar),2)` is very close to the true mean of the distribution, which has value `r 1/lambda` (red line). This indicates that CLT applies to given distribution, and mean value for distribution of sample means is equal to mean of true population distribution (from which samples were generated). 
 
 Now check what is the variability of sample means, based on the theory (CLT) the variability (variance of distribution) of sample means should be close to $SE^2=\sigma^2/n$, where $SE$ is standard error, $\sigma^2$ is variance of population distribution (exponential distribution: $1/\lambda^2$). Using samples we can estimate standard error $SE^2=s^2/n$, where $s^2$ is estimated variance from sample. 
 
@@ -96,10 +96,10 @@ sample.var %>%
   geom_vline(xintercept = mean(sample.var$SE2), color = "blue", size = 1.5, alpha = 1/2) +
   scale_x_continuous(breaks = seq(0,10, 0.5), limits = c(0,2)) +
   labs(title = "Histogram of estimated standard errors VS true standard error",
-       subtitle = "Blue line - SE^2 (using true population variance) | Red line - average of estimated SE^2 (using sample variance)",
+       subtitle = "Red line - SE^2 (using true population variance) | Blue line - average of estimated SE^2 (using sample variance)",
        x = "Variability of sample means (Standard error-SE^2)",
        y = "Number of samples") +
-  theme(plot.subtitle = element_text(size = 6))
+  theme(plot.subtitle = element_text(size = 8))
 ```
 :::
 
@@ -120,10 +120,43 @@ sample.means %>%
        subtitle = "Blue line - sample means distribution | Red line - theoretical distribution of sample means",
        x = "Sample means X(bar)",
        y = "Density") +
-  theme(plot.subtitle = element_text(size = 6))
+  theme(plot.subtitle = element_text(size = 8))
 ```
 :::
 
 
 
-# Part 2: Inferential Data Analysis
+In part two of the project we will analyze the **"ToothGrowth"** data in the R **datasets** package. Data holds results for the effect of Vitamin C on Tooth Growth in Guinea Pigs. Observed variable is $X$-tooth length of Guinea pig. Each animal received one of three dose levels of vitamin C (0.5, 1, and 2 mg/day) by one of two delivery methods, orange juice (first group **OC**) or ascorbic acid (a form of vitamin C and coded as group **VC**). We have 2 delivery methods times 3 different doses resulting in 6 different subgroups of the data. Let's draw a boxplot for observed variable for each group:
+
+::: {.tiny}
+```{r toothsummary}
+ToothGrowth %>% 
+  mutate(group = paste(supp, " / dose(", dose, ")", sep = "")) %>% 
+  ggplot(aes(x = group, y = len, fill = supp)) + geom_boxplot() +
+  labs(title = "Boxplot - Guinea pig tooth length break down by observed group",
+       x = "Group - delivery method / dose", y = "Tooth length")
+```
+:::
+
+We have observed total of 60 Guinea pigs, each group consists of $n=10$ animals. As we can see from the provided box plot above, there are differences in observed tooth length for given groups. If we increase dose the tooth length increases for each delivery method. Also we can see there are differences between delivery methods for given dose. But we must stress that we have relative small sample sizes for each group, so results may vary.
+
+For our formal statistical test (hypothesis testing) we would like to check if given sample data indicate there are differences in mean tooth length (for population of Guinea pigs) if delivery method is used "OJ" (group 1) or "VC" (group 2) with the same dosage 1 mg/day. In order to do proper testing some assumptions must be made: 1) Random variable ($\bar{X}$) sample tooth mean follows normal distribution (CLT) | 2) We do not know variance of $X$ for both groups of populations so we will assume we have different variances (to be on the safe side!) | 3) we are conducting two groups t-test for means (we do not have paired samples!) | 4) Selected $\alpha$ level is $5\%$. | 5) Our hypothesis are: 
+
+* $H_0: \mu_1=\mu_2$ (populations means are equal)
+* $H_a: \mu_1\ne\mu_2$ (populations means are different)
+
+6) We are using two sided t test. Lets conduct a test:
+
+::: {.tiny}
+```{r ttest}
+# conduct a test
+test <- t.test(x = ToothGrowth %>% filter(supp == "OJ" & dose == 1) %>% pull(len),
+               y = ToothGrowth %>% filter(supp == "VC" & dose == 1) %>% pull(len),
+               alternative = "two.sided", paired = FALSE, var.equal = FALSE)
+test[c(5,4,3)]
+```
+:::
+
+R's test results returned sample means, where first group sample mean is `r test[[5]][[1]]` and second group sample mean is `r test[[5]][[2]]`. This indicates there are quite big differences in both sample means. Also mean difference confidence interval conducted at at significance level $\alpha=5\%$ shows that value 0 is not included in the interval, which indicates that there are differences in population means for selected two groups. Rejection of null hypothesis $H_0$ is formally confirmed with p-value `r test[[3]]`, which is lower than $\alpha=5\%$. Therefore we can reject $H_0$ at $95\%$ confidence level, and we can say that mean tooth length of Guinea pig is different for both selected groups (population level), here for the first group method used was "OJ" (dosage 1 mg/day) and for the second group method used was "VC" (dosage 1 mg/day).
+ 
+
